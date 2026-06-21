@@ -13,7 +13,7 @@ from pathlib import Path
 from .llama_ingest import DECODE_TOL  # pre-registered decode noise band (±15%)
 from .schema import validate_table_kind
 
-TAG = {"measured": "✅ MEASURED (on-silicon)",
+TAG = {"measured": "✅ MEASURED tok/s (on-silicon; tokens/$ priced at published $/hr, tokens/J* TDP-derived)",
        "roofline": "📐 ROOFLINE from measured microkernel ceilings (modeled tok/s — not real inference)",
        "dev": "🧪 x86 DEV PROXY (float, pipeline check — not Arm int8)",
        "projection": "📐 PROJECTION (published specs — run CI to measure)"}

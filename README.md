@@ -8,8 +8,10 @@ measurably *cost* ~12%** (49.9→43.9 tok/s, memory-bound path, within the
 pre-registered ±15% band) — confirmed by a bit-exact int8 microkernel whose
 decode-style GEMV path drops the same ~13% (82.4→71.9 GOPS). It then **prices that measured
 throughput** into tokens/$ and tokens/J* (`tokens` = *LLM tokens*, not crypto).
-The economics this implies: because i8mm lifts only compute-bound prefill, the
-newest, most expensive instance is *not* always the cheapest place to run.
+The economics this implies (a labelled **projection** across instances — see the
+crossover limit below, not the measured headline): because i8mm lifts only
+compute-bound prefill, the newest, most expensive instance is *not* always the
+cheapest place to run.
 
 [![dev (x86 pipeline + tests)](https://github.com/Hokutoman00/tokonomics/actions/workflows/dev.yml/badge.svg)](https://github.com/Hokutoman00/tokonomics/actions/workflows/dev.yml)
 [![bench (Arm N2, measured)](https://github.com/Hokutoman00/tokonomics/actions/workflows/bench.yml/badge.svg)](https://github.com/Hokutoman00/tokonomics/actions/workflows/bench.yml)
