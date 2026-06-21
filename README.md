@@ -147,11 +147,17 @@ rejects anything that would blur the line):
 `results/measured/` here carries the maintainer's real Neoverse N2 run
 ([#27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425));
 every Arm number traces to one of those committed JSONs — nothing in this repo
-claims an Arm measurement that hasn't been made. A fresh fork starts with the
-directory holding only `.gitkeep` and populates it on the first `bench` run, so
-*your* numbers are produced by *your* runner, not inherited. `tokens/J` always
-carries a `*`: power is TDP-derived (an estimate), so it is a projection even when
-throughput is measured.
+claims an Arm measurement that hasn't been made. The **+29% prefill headline is
+traceable to raw**: `results/measured/llama_off.json` and `llama_on.json` are the
+unedited `llama-bench` outputs (per-sample timings included — 200.8→258.6 tok/s
+pp512, 49.9→43.9 tok/s tg128), and `tokonomics llama` re-derives the digested
+`llama_economics.json` from them deterministically. The microkernel-derived
+`economics.json` table in `REPORT.md` is, by contrast, a **roofline of the
+measured int8 ceilings** (modeled tok/s, labelled as such — not real inference).
+A fresh fork starts with the directory holding only `.gitkeep` and populates it
+on the first `bench` run, so *your* numbers are produced by *your* runner, not
+inherited. `tokens/J` always carries a `*`: power is TDP-derived (an estimate),
+so it is a projection even when throughput is measured.
 
 ## Layout
 

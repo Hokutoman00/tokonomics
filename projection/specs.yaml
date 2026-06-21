@@ -20,6 +20,19 @@
 # rather than trusting the figure — these citations exist only to ground the
 # PROJECTED map shown before a measured run.
 #
+# MEASURED-vs-PROJECTED reconciliation (read this before trusting the 2x):
+# the ~2x above is a *kernel/peak* figure from published Q4_0_4_8 microbenchmarks.
+# This repo's own measured run on N2 (results/measured/) realizes a SMALLER
+# end-to-end uplift: the int8 microkernel ceiling moves 85.15 -> 101.3 GOPS
+# (1.19x) and real llama.cpp prefill moves 200.8 -> 258.6 tok/s (1.29x). So the
+# peak_int8_gops_on = 2 * peak_int8_gops_off entries below are OPTIMISTIC versus
+# what a full pipeline realizes. The crossover *ordering* (compute-per-$ rising
+# while bandwidth-per-$ stays flat) is unaffected — it only needs the prefill
+# lift to be >1 and the decode lift to be ~1, which the measured run confirms —
+# but the *magnitude* of the prefill-side tokens/$ gain in the swept map is
+# larger than a measured run would show. Re-run CI to replace these with measured
+# ceilings; the shipped projection is a directional map, not a verdict.
+#
 # Neoverse i8mm availability (Arm TRMs):
 #   N1  : SDOT yes, i8mm NO  -> on == off
 #   N2  : i8mm yes (Armv8.6 mandatory MatMulInt8)

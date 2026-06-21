@@ -13,6 +13,7 @@ from pathlib import Path
 from .llama_ingest import DECODE_TOL  # pre-registered decode noise band (±15%)
 
 TAG = {"measured": "✅ MEASURED (on-silicon)",
+       "roofline": "📐 ROOFLINE from measured microkernel ceilings (modeled tok/s — not real inference)",
        "dev": "🧪 x86 DEV PROXY (float, pipeline check — not Arm int8)",
        "projection": "📐 PROJECTION (published specs — run CI to measure)"}
 
@@ -72,7 +73,24 @@ def generate_report(root: Path) -> Path:
                    if lift is not None else ""),
                   ""]
 
-    for label, data in (("measured", measured), ("dev", dev), ("projection", proj)):
+    # Microkernel-derived economics. The int8 GEMM/GEMV ceilings and the STREAM
+    # bandwidth are *measured* on silicon (`bench_off/on.json`: 85→101 GOPS,
+    # ~34-35 GB/s), but the per-model tok/s below are a **roofline derivation** of
+    # those ceilings onto this model — decode == prefill within an i8mm setting
+    # because the simplified roofline applies one ceiling per setting. These are
+    # modeled numbers, NOT a real-inference measurement; the measured per-phase
+    # tok/s are the llama.cpp table above. This table is kept because it is the
+    # microkernel→economics translation the reusable `action.yml` gate scores.
+    if measured:
+        parts += [f"## {TAG['roofline']}",
+                  f"Model: **{measured['model']}** "
+                  "— tok/s here are the **measured int8 ceiling projected onto the "
+                  "model** (roofline), so decode == prefill within each i8mm "
+                  "setting; see the real-inference table above for measured "
+                  "per-phase tok/s.", "",
+                  _econ_table(measured["rows"]), ""]
+
+    for label, data in (("dev", dev), ("projection", proj)):
         if not data:
             continue
         parts += [f"## {TAG[label]}",

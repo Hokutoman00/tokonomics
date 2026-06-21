@@ -134,8 +134,11 @@ jobs:
           git config user.name  "tokonomics-ci"
           git config user.email "tokonomics-ci@users.noreply.github.com"
           # -f: results/measured/*.json is gitignored; force-add the CI-produced
-          # measured-LLM economics so the raw evidence lands in the repo.
-          git add -f results/measured/llama_economics.json REPORT.md
+          # measured-LLM economics AND the raw llama-bench output (llama_off.json /
+          # llama_on.json) so the headline +29% traces all the way back to the raw
+          # llama-bench pp512/tg128 JSON, not just the digested economics table.
+          git add -f results/measured/llama_off.json results/measured/llama_on.json \
+                     results/measured/llama_economics.json REPORT.md
           if git diff --cached --quiet; then
             echo "no measured-LLM changes to commit"
           else
