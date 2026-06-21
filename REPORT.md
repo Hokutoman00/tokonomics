@@ -9,10 +9,10 @@ Model: **Llama-3.2-1B Q4_0**
 
 | instance | phase | i8mm | tok/s | tokens/$ | tokens/J* |
 |---|---|---|--:|--:|--:|
-| cobalt100-n2 | prefill | off | 34.2 | 879,470 | 0.76 |
-| cobalt100-n2 | prefill | on | 40.9 | 1,051,175 | 0.91 |
-| cobalt100-n2 | decode | off | 34.2 | 879,470 | 0.76 |
-| cobalt100-n2 | decode | on | 40.9 | 1,051,175 | 0.91 |
+| cobalt100-n2 | prefill | off | 34.3 | 882,892 | 0.76 |
+| cobalt100-n2 | prefill | on | 40.8 | 1,050,346 | 0.91 |
+| cobalt100-n2 | decode | off | 34.3 | 882,892 | 0.76 |
+| cobalt100-n2 | decode | on | 40.8 | 1,050,346 | 0.91 |
 
 
 ## 🧪 x86 DEV PROXY (float, pipeline check — not Arm int8)

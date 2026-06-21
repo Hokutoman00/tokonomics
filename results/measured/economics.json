@@ -1,0 +1,54 @@
+{
+  "kind": "measured",
+  "model": "Llama-3.2-1B Q4_0",
+  "rows": [
+    {
+      "label": "cobalt100-n2",
+      "arch": "Neoverse N2 (ubuntu-24.04-arm)",
+      "kind": "measured",
+      "model": "Llama-3.2-1B Q4_0",
+      "phase": "prefill",
+      "i8mm": "off",
+      "tok_s": 34.33467741935484,
+      "tokens_per_usd": 882891.7050691243,
+      "tokens_per_joule": 0.7629928315412187,
+      "power_is_estimate": true
+    },
+    {
+      "label": "cobalt100-n2",
+      "arch": "Neoverse N2 (ubuntu-24.04-arm)",
+      "kind": "measured",
+      "model": "Llama-3.2-1B Q4_0",
+      "phase": "prefill",
+      "i8mm": "on",
+      "tok_s": 40.846774193548384,
+      "tokens_per_usd": 1050345.6221198156,
+      "tokens_per_joule": 0.9077060931899641,
+      "power_is_estimate": true
+    },
+    {
+      "label": "cobalt100-n2",
+      "arch": "Neoverse N2 (ubuntu-24.04-arm)",
+      "kind": "measured",
+      "model": "Llama-3.2-1B Q4_0",
+      "phase": "decode",
+      "i8mm": "off",
+      "tok_s": 34.33467741935484,
+      "tokens_per_usd": 882891.7050691243,
+      "tokens_per_joule": 0.7629928315412187,
+      "power_is_estimate": true
+    },
+    {
+      "label": "cobalt100-n2",
+      "arch": "Neoverse N2 (ubuntu-24.04-arm)",
+      "kind": "measured",
+      "model": "Llama-3.2-1B Q4_0",
+      "phase": "decode",
+      "i8mm": "on",
+      "tok_s": 40.846774193548384,
+      "tokens_per_usd": 1050345.6221198156,
+      "tokens_per_joule": 0.9077060931899641,
+      "power_is_estimate": true
+    }
+  ]
+}

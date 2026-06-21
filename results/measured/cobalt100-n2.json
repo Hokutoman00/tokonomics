@@ -1,0 +1,11 @@
+{
+  "label": "cobalt100-n2",
+  "kind": "measured",
+  "arch": "Neoverse N2 (ubuntu-24.04-arm)",
+  "ceilings": {
+    "peak_int8_gops_off": 85.15,
+    "peak_int8_gops_on": 101.3,
+    "mem_bw_gbs": 34.33
+  },
+  "notes": "measured in CI: off=dotprod/sdot on=i8mm/smmla"
+}

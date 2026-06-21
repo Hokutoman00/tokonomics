@@ -1,0 +1,11 @@
+{
+  "label": "cobalt100-n2",
+  "kind": "measured",
+  "arch": "Neoverse N2 (ubuntu-24.04-arm)",
+  "ablation": "on",
+  "kernel_path": "i8mm/smmla",
+  "correct": true,
+  "peak_int8_gops_on": 101.30,
+  "gemv_gops": 71.88,
+  "mem_bw_gbs": 35.09
+}
