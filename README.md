@@ -39,7 +39,13 @@ That single line *is* the finding: the cheapest instance flips from Graviton3
 empty until you run it): fork → **Actions → bench (Arm N2) → Run workflow**. It
 builds i8mm on/off on the free Neoverse N2 runner, runs both the microkernel
 ablation and a real `llama.cpp` model, and **commits the measured tokens/$ table
-+ figures back into your fork**. Measured CI run: `<paste run URL after first run>`.
++ figures back into your fork**.
+
+Measured CI run (this repo, Neoverse N2): [Actions run #27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425).
+On real `llama.cpp` (Llama-3.2-1B Q4_0): i8mm lifts **prefill +29%** (200.8 → 258.6
+tok/s, pp512) and leaves **decode flat** (49.9 → 43.9 tok/s, tg128 — within the
+±15% memory-bound noise band the ingest firewall pre-registers), confirming the
+microkernel ablation. Raw JSON in [`results/measured/`](results/measured/).
 
 ---
 
