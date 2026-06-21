@@ -19,7 +19,7 @@ small LLMs on Arm64 CPUs, and shows when the newest, most expensive instance is
 
 ```bash
 pip install -e .          # pure-Python core
-pytest -q                 # 41 passing: formulas, schema firewall, ingest, tokens/$ gate, driver↔pricing label contract
+pytest -q                 # 45 passing: formulas, schema firewall, ingest, tokens/$ gate, driver↔pricing label contract, crossover falsifiability + flip-margin robustness
 python -m tokonomics project   # regenerate the projected map + crossover + figures
 python -m tokonomics report    # write REPORT.md from whatever results exist
 ```
@@ -111,7 +111,8 @@ lab makes it measurable **two ways** rather than asserted:
 - **micro** — the `bench/microkernel` int8 GEMM ablation (i8mm lifts the GEMM);
 - **macro** — a real `llama.cpp` run (`bench/llama`) on a GGUF model, ingested by
   `tokonomics llama` into a *measured* tokens/$ table where i8mm lifts **prefill
-  (pp512)** while leaving **decode (tg128) ~flat**. That real-model table is the
+  (pp512)** while leaving **decode (tg128) unchanged within noise (−12%, inside
+  the pre-registered ±15% memory-bound band)**. That real-model table is the
   headline of `REPORT.md` once CI has run — measured throughput, not a roofline
   derivation. If the macro decode were to move with i8mm, the ingest **refuses
   the run** (it would contradict the memory-bound claim), so the mechanism is

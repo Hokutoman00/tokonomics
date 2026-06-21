@@ -22,7 +22,8 @@ from .measure_x86 import measure_local
 from .model import MODELS
 from .economics import compute
 from .roofline import plot_roofline
-from .crossover import crossover_grid, plot_crossover
+from .crossover import (
+    crossover_grid, plot_crossover, flip_margin, anchor_on_ceiling)
 
 ROOT = Path(__file__).resolve().parent.parent
 RATIOS = [1, 2, 4, 8, 16, 32, 64, 128]
@@ -41,6 +42,22 @@ def _econ_rows(machines, prices, model):
     return rows
 
 
+def _measured_n2_uplift(default: float = 1.19) -> float:
+    """Read this repo's MEASURED N2 i8mm uplift (on/off int8 ceiling) from the
+    committed measured machine JSON so the robustness anchor tracks the real run.
+    Falls back to the documented 1.19x if no measured file is present (fresh fork
+    before CI), keeping `tokonomics project` deterministic and offline-runnable."""
+    p = ROOT / "results" / "measured" / "cobalt100-n2.json"
+    if not p.exists():
+        return default
+    try:
+        c = json.loads(p.read_text(encoding="utf-8"))["ceilings"]
+        off, on = float(c["peak_int8_gops_off"]), float(c["peak_int8_gops_on"])
+        return round(on / off, 4) if off > 0 and on >= off else default
+    except (KeyError, ValueError, TypeError):
+        return default
+
+
 def cmd_project(args):
     prices = load_prices(ROOT / "econ" / "pricing.yaml")
     machines = load_spec_machines(ROOT / "projection" / "specs.yaml")
@@ -56,6 +73,37 @@ def cmd_project(args):
         encoding="utf-8")
 
     grid = crossover_grid(machines, prices, model, RATIOS, i8mm="on")
+
+    # Tightest decision margin: discloses that *where* the winner flips is
+    # input-sensitive, separately from the structural ordering claim.
+    grid["flip_margin"] = flip_margin(grid)
+
+    # Robustness anchor: the specs.yaml on-ceilings use a published ~2x i8mm
+    # uplift, but this repo MEASURED a smaller N2 uplift. Rebuild the crossover
+    # with on-ceilings pinned to that measured uplift to show the flip is not an
+    # artifact of the optimistic 2x — the ordering is invariant to the magnitude
+    # (decode→bandwidth-per-$, prefill→off-compute-per-$ scaled uniformly).
+    measured_uplift = _measured_n2_uplift()
+    anchored = crossover_grid(
+        anchor_on_ceiling(machines, measured_uplift), prices, model,
+        RATIOS, i8mm="on")
+    grid["measured_anchored"] = {
+        "uplift": measured_uplift,
+        "source": "results/measured/economics.json int8 ceiling on/off "
+                  "(N2 microkernel; ~1.19x) — real llama.cpp prefill is 1.29x",
+        "winners": anchored["winners"],
+        "has_crossover": anchored["has_crossover"],
+        # Structural invariant (always defensible): the flip still exists and its
+        # decode/prefill endpoint winners are unchanged at the measured uplift.
+        "survives": (anchored["has_crossover"] == grid["has_crossover"]
+                     and anchored["winners"][0] == grid["winners"][0]
+                     and anchored["winners"][-1] == grid["winners"][-1]),
+        # Stronger, data-specific fact: on the shipped grid the *full* per-ratio
+        # ordering is also unchanged (the flip ratio doesn't even move).
+        "ordering_identical": anchored["winners"] == grid["winners"],
+        "flip_margin": flip_margin(anchored),
+    }
+
     (out_results / "crossover.json").write_text(json.dumps(grid, indent=2),
                                                 encoding="utf-8")
     plot_crossover(grid, out_figs / "crossover_projected.png", kind="projection")
@@ -116,9 +164,24 @@ def cmd_measured(args):
     rows = []
     for phase in ("prefill", "decode"):
         for i8mm in ("off", "on"):
-            rows.append(asdict(compute(m, price, model, phase, i8mm)))
+            r = asdict(compute(m, price, model, phase, i8mm))
+            # The int8 ceilings (peak_int8_gops_off/on) are MEASURED silicon, so
+            # the machine's kind is correctly "measured". But projecting one
+            # ceiling per i8mm setting onto the model makes these per-model tok/s
+            # a ROOFLINE (decode == prefill within a setting), not a real-inference
+            # measurement. Stamp the table — and every row — "roofline" so a reader
+            # who opens this file directly is not misled by the machine's (correct)
+            # "measured" kind into reading a modeled number as real inference.
+            # Real measured per-phase tok/s live in llama_economics.json.
+            r["kind"] = "roofline"
+            rows.append(r)
     (out_results / "economics.json").write_text(
-        json.dumps({"kind": "measured", "model": model.name, "rows": rows}, indent=2),
+        json.dumps({"kind": "roofline", "model": model.name,
+                    "derivation": "roofline of the MEASURED int8 microkernel "
+                    "ceilings (results/measured/bench_off.json / bench_on.json); "
+                    "modeled tok/s, not real inference — see llama_economics.json "
+                    "for measured per-phase throughput",
+                    "rows": rows}, indent=2),
         encoding="utf-8")
     plot_roofline(m, model, out_figs / f"roofline_{m.label}_measured.png")
     print(f"[measured] {m.label}: peak off={m.ceilings.peak_int8_gops_off:.1f} "

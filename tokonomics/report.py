@@ -82,7 +82,10 @@ def generate_report(root: Path) -> Path:
     # tok/s are the llama.cpp table above. This table is kept because it is the
     # microkernel→economics translation the reusable `action.yml` gate scores.
     if measured:
-        parts += [f"## {TAG['roofline']}",
+        # Drive the heading from the artifact's OWN kind so provenance lives in
+        # the data, not in this layer — cmd_measured stamps it "roofline".
+        mk = measured.get("kind", "roofline")
+        parts += [f"## {TAG.get(mk, TAG['roofline'])}",
                   f"Model: **{measured['model']}** "
                   "— tok/s here are the **measured int8 ceiling projected onto the "
                   "model** (roofline), so decode == prefill within each i8mm "
@@ -121,8 +124,40 @@ def generate_report(root: Path) -> Path:
         parts += ["## Crossover finding (projection)",
                   f"- prompt:gen ratios swept: {cross['ratios']}",
                   f"- tokens/$ winner per ratio: {winners}",
-                  f"- **Is the newest instance always the cheapest?** {verdict}",
-                  "",
+                  f"- **Is the newest instance always the cheapest?** {verdict}"]
+
+        fm = cross.get("flip_margin")
+        if fm and cross["has_crossover"]:
+            parts.append(
+                f"- **Flip margin (tightest cell):** at ratio {fm['ratio']}, "
+                f"**{fm['winner']}** leads **{fm['runner_up']}** by only "
+                f"**{fm['margin_frac'] * 100:.1f}%** — so *where* the flip lands "
+                f"is input-sensitive (a small price/bandwidth change moves it), "
+                f"even though *that* it flips is structural.")
+
+        anc = cross.get("measured_anchored")
+        if anc:
+            survives = anc.get("survives")
+            identical = anc.get("ordering_identical")
+            afm = anc.get("flip_margin") or {}
+            strength = ("**keeps the crossover and the identical per-ratio "
+                        "ordering**" if identical else
+                        "**keeps the crossover and the same decode/prefill "
+                        "endpoint winners** (the flip ratio may shift)"
+                        if survives else "**loses the crossover**")
+            parts.append(
+                f"- **Robustness — flip survives at MEASURED i8mm magnitude:** "
+                f"rebuilding the sweep with on-ceilings pinned to this repo's "
+                f"measured N2 uplift (**{anc['uplift']}x**, not the published ~2x) "
+                f"{strength} "
+                f"({anc['winners'][0]} decode-heavy → {anc['winners'][-1]} "
+                f"prefill-heavy"
+                + (f", tightest margin {afm['margin_frac'] * 100:.1f}%" if afm else "")
+                + "). The flip is set by bandwidth-per-$ vs compute-per-$, so its "
+                "existence does not depend on the optimistic 2x — only on the "
+                "i8mm uplift being >1, which the measured run confirms.")
+
+        parts += ["",
                   "> Sensitivity: this is a **projection** computed from the "
                   "hand-entered `projection/specs.yaml` (bandwidth, peak GOP/s) and "
                   "`econ/pricing.yaml` ($/hr, TDP). The crossover *ordering* is "

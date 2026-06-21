@@ -67,5 +67,34 @@
     "graviton4-v2",
     "graviton4-v2"
   ],
-  "has_crossover": true
+  "has_crossover": true,
+  "flip_margin": {
+    "ratio": 16,
+    "winner": "graviton4-v2",
+    "runner_up": "graviton3-v1",
+    "margin_frac": 0.0018623392022500357
+  },
+  "measured_anchored": {
+    "uplift": 1.1897,
+    "source": "results/measured/economics.json int8 ceiling on/off (N2 microkernel; ~1.19x) \u2014 real llama.cpp prefill is 1.29x",
+    "winners": [
+      "graviton3-v1",
+      "graviton3-v1",
+      "graviton3-v1",
+      "graviton3-v1",
+      "graviton4-v2",
+      "graviton4-v2",
+      "graviton4-v2",
+      "graviton4-v2"
+    ],
+    "has_crossover": true,
+    "survives": true,
+    "ordering_identical": true,
+    "flip_margin": {
+      "ratio": 8,
+      "winner": "graviton3-v1",
+      "runner_up": "graviton4-v2",
+      "margin_frac": 0.0017628601023846149
+    }
+  }
 }

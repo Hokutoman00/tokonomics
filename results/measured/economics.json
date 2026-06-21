@@ -1,11 +1,12 @@
 {
-  "kind": "measured",
+  "kind": "roofline",
   "model": "Llama-3.2-1B Q4_0",
+  "derivation": "roofline of the MEASURED int8 microkernel ceilings (results/measured/bench_off.json / bench_on.json); modeled tok/s, not real inference \u2014 see llama_economics.json for measured per-phase throughput",
   "rows": [
     {
       "label": "cobalt100-n2",
       "arch": "Neoverse N2 (ubuntu-24.04-arm)",
-      "kind": "measured",
+      "kind": "roofline",
       "model": "Llama-3.2-1B Q4_0",
       "phase": "prefill",
       "i8mm": "off",
@@ -17,7 +18,7 @@
     {
       "label": "cobalt100-n2",
       "arch": "Neoverse N2 (ubuntu-24.04-arm)",
-      "kind": "measured",
+      "kind": "roofline",
       "model": "Llama-3.2-1B Q4_0",
       "phase": "prefill",
       "i8mm": "on",
@@ -29,7 +30,7 @@
     {
       "label": "cobalt100-n2",
       "arch": "Neoverse N2 (ubuntu-24.04-arm)",
-      "kind": "measured",
+      "kind": "roofline",
       "model": "Llama-3.2-1B Q4_0",
       "phase": "decode",
       "i8mm": "off",
@@ -41,7 +42,7 @@
     {
       "label": "cobalt100-n2",
       "arch": "Neoverse N2 (ubuntu-24.04-arm)",
-      "kind": "measured",
+      "kind": "roofline",
       "model": "Llama-3.2-1B Q4_0",
       "phase": "decode",
       "i8mm": "on",
