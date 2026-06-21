@@ -1,0 +1,42 @@
+{
+  "kind": "measured",
+  "source": "llama.cpp llama-bench (real GGUF inference, pp512/tg128)",
+  "model": "/home/runner/work/tokonomics/tokonomics/.llama-work/model.gguf",
+  "instance": "cobalt100-n2",
+  "rows": [
+    {
+      "label": "cobalt100-n2",
+      "phase": "prefill",
+      "i8mm": "off",
+      "tok_s": 200.784323,
+      "tokens_per_usd": 5163025.448571428,
+      "tokens_per_joule": 4.461873844444445
+    },
+    {
+      "label": "cobalt100-n2",
+      "phase": "prefill",
+      "i8mm": "on",
+      "tok_s": 258.555556,
+      "tokens_per_usd": 6648571.4399999995,
+      "tokens_per_joule": 5.745679022222223
+    },
+    {
+      "label": "cobalt100-n2",
+      "phase": "decode",
+      "i8mm": "off",
+      "tok_s": 49.877236,
+      "tokens_per_usd": 1282557.497142857,
+      "tokens_per_joule": 1.1083830222222224
+    },
+    {
+      "label": "cobalt100-n2",
+      "phase": "decode",
+      "i8mm": "on",
+      "tok_s": 43.898489,
+      "tokens_per_usd": 1128818.2885714283,
+      "tokens_per_joule": 0.9755219777777777
+    }
+  ],
+  "i8mm_prefill_lift": 1.2877278073149168,
+  "decode_ratio": 0.8801307474215291
+}
