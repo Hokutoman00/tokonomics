@@ -7,6 +7,7 @@
  * the ablation is meaningless. The build label (i8mm on/off) comes from the
  * Makefile via -DABLATION_LABEL so the JSON is self-describing.
  */
+#define _POSIX_C_SOURCE 199309L  /* expose clock_gettime/CLOCK_MONOTONIC under -std=c11 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
