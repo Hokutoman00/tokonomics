@@ -1,9 +1,13 @@
 # Tokonomics
 
-**The Arm64 LLM-inference economics lab.** `tokens` here means *LLM tokens*, not
-crypto — this measures **tokens per dollar** and **tokens per joule** of running
-small LLMs on Arm64 CPUs, and shows when the newest, most expensive instance is
-*not* the cheapest place to run them.
+**The Arm64 LLM-inference economics lab.** The primary result is a *measurement*:
+on real Arm silicon (free Neoverse N2 runner) it runs a within-CPU **Armv8.6 i8mm
+(SMMLA) on/off ablation** and finds i8mm lifts **prefill +29%** on real
+`llama.cpp` (Llama-3.2-1B Q4_0, pp512) while leaving **decode flat** (memory-bound)
+— confirmed by a bit-exact int8 microkernel. It then **prices that measured
+throughput** into tokens/$ and tokens/J* (`tokens` = *LLM tokens*, not crypto).
+The economics this implies: because i8mm lifts only compute-bound prefill, the
+newest, most expensive instance is *not* always the cheapest place to run.
 
 [![dev (x86 pipeline + tests)](https://github.com/Hokutoman00/tokonomics/actions/workflows/dev.yml/badge.svg)](https://github.com/Hokutoman00/tokonomics/actions/workflows/dev.yml)
 [![bench (Arm N2, measured)](https://github.com/Hokutoman00/tokonomics/actions/workflows/bench.yml/badge.svg)](https://github.com/Hokutoman00/tokonomics/actions/workflows/bench.yml)
@@ -19,7 +23,7 @@ small LLMs on Arm64 CPUs, and shows when the newest, most expensive instance is
 
 ```bash
 pip install -e .          # pure-Python core
-pytest -q                 # 45 passing: formulas, schema firewall, ingest, tokens/$ gate, driver↔pricing label contract, crossover falsifiability + flip-margin robustness
+pytest -q                 # 47 passing: formulas, schema + four-kind firewall, ingest, tokens/$ gate, driver↔pricing label contract, crossover falsifiability + flip-margin robustness
 python -m tokonomics project   # regenerate the projected map + crossover + figures
 python -m tokonomics report    # write REPORT.md from whatever results exist
 ```
@@ -32,8 +36,11 @@ Expected tail of `python -m tokonomics project`:
   'graviton4-v2', 'graviton4-v2'])
 ```
 
-That single line *is* the finding: the cheapest instance flips from Graviton3
-(decode-heavy) to Graviton4 (prefill-heavy). `REPORT.md` shows the full table.
+That line is the economics *implication* (projected across instances): the
+cheapest instance flips from Graviton3 (decode-heavy) to Graviton4
+(prefill-heavy). The **primary result is the measured i8mm ablation below** — the
+crossover is what that measurement implies for instance choice, not the headline.
+`REPORT.md` leads with the measured table.
 
 **Measured on real Arm silicon — this repo already carries the maintainer's run**
 (the headline slot in `REPORT.md`): [Actions run #27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425)
@@ -111,8 +118,9 @@ lab makes it measurable **two ways** rather than asserted:
 - **micro** — the `bench/microkernel` int8 GEMM ablation (i8mm lifts the GEMM);
 - **macro** — a real `llama.cpp` run (`bench/llama`) on a GGUF model, ingested by
   `tokonomics llama` into a *measured* tokens/$ table where i8mm lifts **prefill
-  (pp512)** while leaving **decode (tg128) unchanged within noise (−12%, inside
-  the pre-registered ±15% memory-bound band)**. That real-model table is the
+  (pp512)** while **decode (tg128) does not improve** (−12%, inside the
+  pre-registered ±15% memory-bound noise band — a measured negative result for
+  decode, not hidden). That real-model table is the
   headline of `REPORT.md` once CI has run — measured throughput, not a roofline
   derivation. If the macro decode were to move with i8mm, the ingest **refuses
   the run** (it would contradict the memory-bound claim), so the mechanism is
@@ -134,16 +142,27 @@ To get **measured Arm** numbers: fork, then **Actions → bench (Arm N2) → Run
 workflow**. CI populates `results/measured/` and overwrites the figures with
 on-silicon data.
 
-## Honesty: three kinds of number, never mixed
+## Honesty: four kinds of number, never mixed
 
-This is a benchmark, so provenance is enforced in code (`tokonomics/schema.py`
-rejects anything that would blur the line):
+This is a benchmark, so provenance is enforced in code: `tokonomics/schema.py`
+rejects any machine `kind` outside `VALID_KINDS`, and
+`validate_table_kind` (run on every economics table by `tokonomics report`,
+`tests/test_schema.py`) rejects any table `kind` outside the four below — so a
+projection can never render under a measured heading and the `roofline` label
+can never be silently dropped:
 
 | label | meaning | where |
 |---|---|---|
-| ✅ **measured** | produced by the harness on real silicon (CI, Neoverse N2) | `results/measured/**` |
+| ✅ **measured** | produced by the harness on real silicon (CI, Neoverse N2) — the llama.cpp tok/s headline | `results/measured/llama_economics.json` |
+| 📐 **roofline** | the *measured* int8 microkernel ceilings projected onto a model (modeled tok/s, decode == prefill per i8mm setting) — derived from measurement, but not real inference | `results/measured/economics.json` |
 | 🧪 **dev proxy** | local **x86 float** run that validates the *pipeline*, not Arm int8 | `results/x86-dev/**` |
 | 📐 **projection** | derived from **published specs** (Neoverse TRM / instance pricing) — an *estimate*, replaced by `measured` when CI runs | `results/projected/**` |
+
+One more axis cuts across all four: even on a `measured` row, **`tokens/$` prices
+measured tok/s at a *published* `$/hr`** (not a measured cost) and **`tokens/J*`
+is TDP-derived** — so those two columns carry an assumed input regardless of the
+row's throughput provenance. The label above describes the *throughput*; the
+price/power inputs are always published specs you can swap in `econ/pricing.yaml`.
 
 `results/measured/` here carries the maintainer's real Neoverse N2 run
 ([#27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425));

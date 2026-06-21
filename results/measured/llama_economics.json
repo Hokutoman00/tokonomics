@@ -1,7 +1,7 @@
 {
   "kind": "measured",
   "source": "llama.cpp llama-bench (real GGUF inference, pp512/tg128)",
-  "model": "/home/runner/work/tokonomics/tokonomics/.llama-work/model.gguf",
+  "model": "llama 1B Q4_0",
   "instance": "cobalt100-n2",
   "rows": [
     {

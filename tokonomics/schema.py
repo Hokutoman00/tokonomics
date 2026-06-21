@@ -13,9 +13,30 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
 
-# The three confidence kinds. Anything outside this set is rejected so a
-# projection can never be silently relabelled as a measurement.
+# The three confidence kinds a *machine* can carry: its ceilings are either
+# measured on silicon, a dev-proxy (x86 float), or a published-spec projection.
+# Anything outside this set is rejected so a projection can never be silently
+# relabelled as a measurement.
 VALID_KINDS = ("measured", "dev", "projection")
+
+# Economics *tables* (per-model tok/s) can additionally be a "roofline": a
+# measured/projected ceiling projected onto a model (modeled tok/s, decode ==
+# prefill within an i8mm setting), which is neither a raw machine kind nor a
+# real-inference measurement. The firewall enforces this fourth label at the
+# table level via validate_table_kind so "roofline" can't be silently dropped
+# or a real machine kind mislabelled — closing the gap that VALID_KINDS (which
+# only governs MachineResult) left for the economics tables.
+TABLE_KINDS = ("measured", "roofline", "dev", "projection")
+
+
+def validate_table_kind(kind: Any, where: str = "economics table") -> str:
+    """Reject any economics-table `kind` outside TABLE_KINDS. Returns the kind so
+    callers can use it inline. This is the table-level twin of the MachineResult
+    `kind not in VALID_KINDS` check, so the advertised four-kind firewall is real
+    in code rather than just narrated in the README."""
+    if kind not in TABLE_KINDS:
+        raise ValueError(f"{where}: kind {kind!r} not in {TABLE_KINDS}")
+    return kind
 
 
 def _require(d: dict, key: str, types: tuple[type, ...], where: str) -> Any:

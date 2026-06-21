@@ -40,6 +40,12 @@ from .schema import PriceEntry
 DECODE_TOL = 0.15
 
 
+def _basename(p) -> str:
+    """Last path component of a model_filename, or "" — never the full build
+    path, so a CI artifact path can't leak into the published model name."""
+    return Path(p).name if p else ""
+
+
 @dataclass(frozen=True)
 class LlamaThroughput:
     """The two measured throughputs from one llama-bench run."""
@@ -77,7 +83,11 @@ def parse_llama_bench(doc: list[dict]) -> LlamaThroughput:
     for r in doc:
         n_prompt = int(r.get("n_prompt", 0))
         n_gen = int(r.get("n_gen", 0))
-        model = model or r.get("model_filename") or r.get("model_type") or ""
+        # Prefer llama-bench's clean `model_type` ("llama 1B Q4_0") over
+        # `model_filename`, which in CI is an opaque build path
+        # (".../.llama-work/model.gguf") that would leak into the headline table.
+        # Fall back to the filename's basename, never the full path.
+        model = model or r.get("model_type") or _basename(r.get("model_filename"))
         if n_gen == 0 and n_prompt > 0:
             pp_rows.append(r)
         elif n_prompt == 0 and n_gen > 0:

@@ -3,7 +3,8 @@ rejected before it can become an economics number (L3/RC-3)."""
 
 import pytest
 
-from tokonomics.schema import MachineResult, Ceilings, PriceEntry
+from tokonomics.schema import (
+    MachineResult, Ceilings, PriceEntry, validate_table_kind, TABLE_KINDS)
 
 
 def _good():
@@ -62,6 +63,23 @@ def test_i8mm_on_below_off_rejected():
     d["ceilings"]["peak_int8_gops_on"] = 100.0   # < off 500 -> implausible
     with pytest.raises(ValueError):
         MachineResult.from_dict(d)
+
+
+def test_table_kind_firewall_accepts_four_kinds():
+    # All four advertised table kinds (incl. the "roofline" fourth label that
+    # VALID_KINDS does not cover) must pass and be returned unchanged.
+    assert set(TABLE_KINDS) == {"measured", "roofline", "dev", "projection"}
+    for k in TABLE_KINDS:
+        assert validate_table_kind(k) == k
+
+
+def test_table_kind_firewall_rejects_unknown_and_missing():
+    # A projection mislabelled, a dropped kind, or a typo must all raise — this
+    # is the check report.generate_report runs on every economics table so a
+    # projected number can't render under a measured heading.
+    for bad in ("guess", "", None, "Measured", "rooflines"):
+        with pytest.raises(ValueError):
+            validate_table_kind(bad, where="t.json")
 
 
 def test_price_entry_requires_provenance():
