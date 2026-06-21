@@ -44,7 +44,11 @@ jobs:
 
       - name: Run microkernel (i8mm OFF and ON)
         working-directory: bench/microkernel
+        # pipefail: the driver exits non-zero if its GEMM fails the bit-exact
+        # gemm_ref memcmp, and `| tee` would otherwise mask that behind tee's 0.
+        # This enforces the bit-exact gate here, not only in the Python merge.
         run: |
+          set -o pipefail
           ./bench_off | tee ../../results/measured/bench_off.json
           ./bench_on  | tee ../../results/measured/bench_on.json
 

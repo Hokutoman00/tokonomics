@@ -15,7 +15,7 @@ Model: **/home/runner/work/tokonomics/tokonomics/.llama-work/model.gguf** on **c
 | cobalt100-n2 | decode | on | 43.9 | 1,128,818 | 0.98 |
 
 
-- **i8mm prefill lift: 1.29x** (measured pp512). **decode ratio: 0.88x** — memory-bound, so i8mm leaves decode ~flat, exactly as the roofline predicts. The macro (llama.cpp) run thus confirms the micro (microkernel) ablation: i8mm pays off on prefill and not on decode.
+- **i8mm prefill lift: 1.29x** (measured pp512). **decode: -12%** (0.88x) — within the pre-registered ±15% memory-bound noise band, i.e. i8mm does **not** help decode (and the run is refused if decode moves *with* i8mm beyond that band), exactly as the roofline predicts. The macro (llama.cpp) run thus confirms the micro (microkernel) ablation: i8mm pays off on prefill, not decode.
 
 ## ✅ MEASURED (on-silicon)
 Model: **Llama-3.2-1B Q4_0**

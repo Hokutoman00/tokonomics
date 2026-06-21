@@ -35,17 +35,18 @@ Expected tail of `python -m tokonomics project`:
 That single line *is* the finding: the cheapest instance flips from Graviton3
 (decode-heavy) to Graviton4 (prefill-heavy). `REPORT.md` shows the full table.
 
-**To see it measured on real Arm silicon** (the headline slot in `REPORT.md`,
-empty until you run it): fork → **Actions → bench (Arm N2) → Run workflow**. It
-builds i8mm on/off on the free Neoverse N2 runner, runs both the microkernel
-ablation and a real `llama.cpp` model, and **commits the measured tokens/$ table
-+ figures back into your fork**.
+**Measured on real Arm silicon — this repo already carries the maintainer's run**
+(the headline slot in `REPORT.md`): [Actions run #27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425)
+on the free Neoverse N2 runner built i8mm on/off, ran both the microkernel
+ablation and a real `llama.cpp` model, and **committed the measured tokens/$ table
++ figures back into the repo** (`results/measured/`). Fork → **Actions → bench
+(Arm N2) → Run workflow** to regenerate every number on *your* own silicon.
 
-Measured CI run (this repo, Neoverse N2): [Actions run #27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425).
 On real `llama.cpp` (Llama-3.2-1B Q4_0): i8mm lifts **prefill +29%** (200.8 → 258.6
-tok/s, pp512) and leaves **decode flat** (49.9 → 43.9 tok/s, tg128 — within the
-±15% memory-bound noise band the ingest firewall pre-registers), confirming the
-microkernel ablation. Raw JSON in [`results/measured/`](results/measured/).
+tok/s, pp512) and moves **decode −12%** (49.9 → 43.9 tok/s, tg128) — inside the
+±15% memory-bound noise band the ingest firewall pre-registers, i.e. i8mm does
+**not** help decode (memory-bound), exactly as the roofline predicts and the
+microkernel ablation shows. Raw JSON in [`results/measured/`](results/measured/).
 
 ---
 
@@ -69,9 +70,11 @@ hand-asserted, and is replaced by measured silicon the moment CI runs.
    prefill speedup directly — instead of comparing two different chips and
    guessing which difference mattered. `bench/microkernel/kernel.c` builds both
    the `vdotq_s32` (SDOT) and `vmmlaq_s32` (SMMLA) paths from one source, and each
-   build refuses to report timing until its GEMM matches a scalar reference
-   **bit-for-bit** (`memcmp` against `gemm_ref`) — so each path is proven exact
-   and the only difference between the two binaries is the instruction.
+   build checks its GEMM against a scalar reference **bit-for-bit** (`memcmp`
+   against `gemm_ref`): on any mismatch the driver flags `correct:false` and exits
+   non-zero, and the Python merge step **refuses** that run — so a path is admitted
+   only when proven exact, and the only difference between the two binaries is the
+   instruction.
 
 2. **The newest instance is *not* always the cheapest.** Decode is memory-bound,
    prefill is compute-bound; i8mm lifts only the compute ceiling. Because
@@ -141,10 +144,14 @@ rejects anything that would blur the line):
 | 🧪 **dev proxy** | local **x86 float** run that validates the *pipeline*, not Arm int8 | `results/x86-dev/**` |
 | 📐 **projection** | derived from **published specs** (Neoverse TRM / instance pricing) — an *estimate*, replaced by `measured` when CI runs | `results/projected/**` |
 
-`results/measured/` ships **empty** (just `.gitkeep`) until you run the Arm
-workflow. Nothing in this repo claims an Arm measurement that hasn't been made.
-`tokens/J` always carries a `*`: power is TDP-derived (an estimate), so it is a
-projection even when throughput is measured.
+`results/measured/` here carries the maintainer's real Neoverse N2 run
+([#27900233425](https://github.com/Hokutoman00/tokonomics/actions/runs/27900233425));
+every Arm number traces to one of those committed JSONs — nothing in this repo
+claims an Arm measurement that hasn't been made. A fresh fork starts with the
+directory holding only `.gitkeep` and populates it on the first `bench` run, so
+*your* numbers are produced by *your* runner, not inherited. `tokens/J` always
+carries a `*`: power is TDP-derived (an estimate), so it is a projection even when
+throughput is measured.
 
 ## Layout
 

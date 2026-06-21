@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .llama_ingest import DECODE_TOL  # pre-registered decode noise band (±15%)
+
 TAG = {"measured": "✅ MEASURED (on-silicon)",
        "dev": "🧪 x86 DEV PROXY (float, pipeline check — not Arm int8)",
        "projection": "📐 PROJECTION (published specs — run CI to measure)"}
@@ -61,10 +63,12 @@ def generate_report(root: Path) -> Path:
                   f"via `{llama['source']}`", "",
                   _econ_table(llama["rows"]), "",
                   (f"- **i8mm prefill lift: {lift:.2f}x** (measured pp512). "
-                   f"**decode ratio: {dr:.2f}x** — memory-bound, so i8mm leaves "
-                   "decode ~flat, exactly as the roofline predicts. The macro "
-                   "(llama.cpp) run thus confirms the micro (microkernel) "
-                   "ablation: i8mm pays off on prefill and not on decode."
+                   f"**decode: {(dr - 1.0) * 100:+.0f}%** ({dr:.2f}x) — within the "
+                   f"pre-registered ±{int(DECODE_TOL * 100)}% memory-bound noise "
+                   "band, i.e. i8mm does **not** help decode (and the run is refused "
+                   "if decode moves *with* i8mm beyond that band), exactly as the "
+                   "roofline predicts. The macro (llama.cpp) run thus confirms the "
+                   "micro (microkernel) ablation: i8mm pays off on prefill, not decode."
                    if lift is not None else ""),
                   ""]
 
