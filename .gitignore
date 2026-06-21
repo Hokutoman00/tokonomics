@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# CI build artifacts (microkernel binaries, llama.cpp work tree)
+bench/microkernel/bench_on
+bench/microkernel/bench_off
+bench/microkernel/bench_scalar
+.llama-work/
+
+# measured results are produced by CI on real silicon; keep the dir, not stale runs
+results/measured/*.json
+!results/measured/.gitkeep

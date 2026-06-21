@@ -1,0 +1,30 @@
+{
+  "kind": "dev",
+  "model": "Llama-3.2-1B Q4_0",
+  "rows": [
+    {
+      "label": "x86-dev",
+      "arch": "local x86 (float proxy \u2014 validates pipeline, not Arm int8)",
+      "kind": "dev",
+      "model": "Llama-3.2-1B Q4_0",
+      "phase": "prefill",
+      "i8mm": "on",
+      "tok_s": 9.914310383783992,
+      "tokens_per_usd": 223491.0293151056,
+      "tokens_per_joule": 0.19828620767567984,
+      "power_is_estimate": true
+    },
+    {
+      "label": "x86-dev",
+      "arch": "local x86 (float proxy \u2014 validates pipeline, not Arm int8)",
+      "kind": "dev",
+      "model": "Llama-3.2-1B Q4_0",
+      "phase": "decode",
+      "i8mm": "on",
+      "tok_s": 3.8745028336652827,
+      "tokens_per_usd": 87340.07640072021,
+      "tokens_per_joule": 0.07749005667330565,
+      "power_is_estimate": true
+    }
+  ]
+}

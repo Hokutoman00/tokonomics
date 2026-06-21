@@ -1,0 +1,43 @@
+# pricing.yaml — reference inputs (NOT magic numbers).
+#
+# Each row is public on-demand pricing for a 4-vCPU compute-optimized SKU,
+# plus a TDP-derived power figure. usd_per_hour is REAL published pricing;
+# tdp_watt is an ESTIMATE (cloud vendors don't expose per-instance socket
+# power) and only feeds tokens/Joule, which is therefore labelled a projection.
+#
+# These are inputs you refresh: edit a row, re-run `make figures`, and every
+# tokens/$ number + the crossover map regenerate. Verify each value at its
+# source_url before quoting it.
+
+machines:
+  - label: graviton2-n1
+    arch: "AWS Graviton2 / Neoverse-N1 (c6g.xlarge)"
+    vcpu: 4
+    usd_per_hour: 0.1360
+    tdp_watt: 40
+    source_url: "https://aws.amazon.com/ec2/pricing/on-demand/"
+    retrieved: "2026-06-20"
+
+  - label: cobalt100-n2
+    arch: "Azure Cobalt 100 / Neoverse-N2 (Dpls_v6, 4 vCPU)"
+    vcpu: 4
+    usd_per_hour: 0.1400
+    tdp_watt: 45
+    source_url: "https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/"
+    retrieved: "2026-06-20"
+
+  - label: graviton3-v1
+    arch: "AWS Graviton3 / Neoverse-V1 (c7g.xlarge)"
+    vcpu: 4
+    usd_per_hour: 0.1450
+    tdp_watt: 48
+    source_url: "https://aws.amazon.com/ec2/pricing/on-demand/"
+    retrieved: "2026-06-20"
+
+  - label: graviton4-v2
+    arch: "AWS Graviton4 / Neoverse-V2 (c8g.xlarge)"
+    vcpu: 4
+    usd_per_hour: 0.1597
+    tdp_watt: 50
+    source_url: "https://aws.amazon.com/ec2/pricing/on-demand/"
+    retrieved: "2026-06-20"

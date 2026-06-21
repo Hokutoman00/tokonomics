@@ -1,0 +1,60 @@
+# specs.yaml — published-spec PROJECTION of roofline ceilings.
+#
+# These are NOT measured. peak_int8_gops_* are first-order estimates from
+# public microarchitecture parameters (SIMD width x issue width x clock), and
+# mem_bw_gbs is the per-4-vCPU effective share estimated from the platform's
+# memory subsystem. They exist only to draw the PROJECTED map; the CI harness
+# on real silicon overwrites them with measured numbers (results/measured/**).
+#
+# Grounding of the one ratio that carries the finding: i8mm (SMMLA) raising
+# int8 GEMM throughput ~2x over NEON dotprod (SDOT), with the gain concentrated
+# in the compute-bound prefill/prompt-processing phase, is reported by published
+# llama.cpp Arm work. The ~2x is the defensible part; absolute GOP/s are
+# estimates; the relative i8mm uplift is the load-bearing, CI-verifiable claim.
+# Sources (provenance, same standard as econ/pricing.yaml; retrieved 2026-06-20):
+#   - Arm AI blog, "Optimize Llama.cpp with Arm i8mm instruction":
+#     https://community.arm.com/arm-community-blogs/b/ai-blog/posts/optimize-llama-cpp-with-arm-i8mm-instruction
+#   - llama.cpp PR #5780 (AArch64 GEMM via mmla / SMMLA), ggml-org/llama.cpp:
+#     https://github.com/ggml-org/llama.cpp/pull/5780
+# The CI harness on this repo's own Neoverse N2 runner re-measures the uplift
+# rather than trusting the figure — these citations exist only to ground the
+# PROJECTED map shown before a measured run.
+#
+# Neoverse i8mm availability (Arm TRMs):
+#   N1  : SDOT yes, i8mm NO  -> on == off
+#   N2  : i8mm yes (Armv8.6 mandatory MatMulInt8)
+#   V1  : i8mm yes
+#   V2  : i8mm yes
+
+machines:
+  - label: graviton2-n1
+    arch: "AWS Graviton2 / Neoverse-N1"
+    has_i8mm: false
+    peak_int8_gops_off: 560
+    peak_int8_gops_on: 560        # no i8mm: identical
+    mem_bw_gbs: 44
+    source: "Arm Neoverse N1 TRM (no MatMulInt8); SDOT-only int8 path"
+
+  - label: cobalt100-n2
+    arch: "Azure Cobalt 100 / Neoverse-N2"
+    has_i8mm: true
+    peak_int8_gops_off: 680
+    peak_int8_gops_on: 1360       # i8mm ~2x (published llama.cpp Q4_0_4_8/8_8)
+    mem_bw_gbs: 46
+    source: "Arm Neoverse N2 TRM (Armv8.6 MatMulInt8 mandatory)"
+
+  - label: graviton3-v1
+    arch: "AWS Graviton3 / Neoverse-V1"
+    has_i8mm: true
+    peak_int8_gops_off: 720
+    peak_int8_gops_on: 1440
+    mem_bw_gbs: 48
+    source: "Arm Neoverse V1 TRM (i8mm); DDR5"
+
+  - label: graviton4-v2
+    arch: "AWS Graviton4 / Neoverse-V2"
+    has_i8mm: true
+    peak_int8_gops_off: 820
+    peak_int8_gops_on: 1640
+    mem_bw_gbs: 50
+    source: "Arm Neoverse V2 TRM (i8mm); 12-channel DDR5 platform, 4-vCPU share"

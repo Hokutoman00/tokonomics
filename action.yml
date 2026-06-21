@@ -1,0 +1,59 @@
+name: 'Tokonomics tokens/$ gate'
+description: >
+  Build Tokonomics' int8 GEMM microkernel with i8mm on/off on the current Arm
+  runner, price the prefill GOP/s into tokens/$, and fail the build if tokens/$
+  regresses below a threshold. Use it as a tokens/$ regression gate keyed to a
+  given runner + pricing row — e.g. to catch a runner/image/pricing change that
+  silently makes int8 inference more expensive. (It measures the bundled
+  reference microkernel, not your repo's own model; to gate your own kernel,
+  drop it in as `bench/microkernel/kernel.c` — the bit-exact oracle still holds.)
+  REQUIRES an Arm64 runner with i8mm (e.g. GitHub's free `ubuntu-24.04-arm` =
+  Neoverse N2); it builds `-march=armv8.6-a+i8mm` and will not compile on x86.
+  Set `min-tokens-per-usd` to actually gate — the default `0` only *measures*
+  and never fails (so a first adopter can read a baseline before choosing a floor).
+branding:
+  icon: 'dollar-sign'
+  color: 'orange'
+
+inputs:
+  model:
+    description: 'Model key from tokonomics MODELS (sets params/bytes for econ)'
+    required: false
+    default: 'llama-3.2-1b-q4_0'
+  instance-label:
+    description: 'Pricing label to value tokens/$ against (must exist in pricing.yaml)'
+    required: false
+    default: 'cobalt100-n2'
+  min-tokens-per-usd:
+    description: >
+      Fail the build if measured prefill tokens/$ (i8mm on) drops below this.
+      Default 0 = measure-only (the gate never fires); set a real floor to enforce.
+    required: false
+    default: '0'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install tokonomics
+      shell: bash
+      run: pip install -e "${{ github.action_path }}"
+    - name: Build + run microkernel ablation
+      shell: bash
+      working-directory: ${{ github.action_path }}/bench/microkernel
+      run: |
+        make both
+        ./bench_off | tee ../../results/measured/bench_off.json
+        ./bench_on  | tee ../../results/measured/bench_on.json
+    - name: Merge measured + evaluate gate
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        python -m tokonomics measured --model "${{ inputs.model }}"
+        # The gate logic is a unit-tested function (tokonomics/gate.py), not an
+        # inline heredoc — so the regression check that fails your build is the
+        # same code proven in tests/test_gate.py.
+        python -m tokonomics gate --min-tokens-per-usd "${{ inputs.min-tokens-per-usd }}"

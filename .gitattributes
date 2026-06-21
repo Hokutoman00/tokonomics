@@ -1,0 +1,8 @@
+# Keep LF on anything the Linux Arm CI runner executes, regardless of the
+# committer's OS — CRLF would break `bash` shebangs and `make` recipes.
+* text=auto eol=lf
+*.sh text eol=lf
+Makefile text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.png binary

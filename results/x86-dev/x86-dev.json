@@ -1,0 +1,11 @@
+{
+  "label": "x86-dev",
+  "kind": "dev",
+  "arch": "local x86 (float proxy \u2014 validates pipeline, not Arm int8)",
+  "ceilings": {
+    "peak_int8_gops_off": 24.587489751784297,
+    "peak_int8_gops_on": 24.587489751784297,
+    "mem_bw_gbs": 2.690454767697173
+  },
+  "notes": "measured locally via numpy BLAS matmul + STREAM triad"
+}

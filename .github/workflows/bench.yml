@@ -1,0 +1,139 @@
+name: bench (Arm N2, measured)
+
+# Runs the microkernel ablation on a FREE Arm runner (ubuntu-24.04-arm =
+# Cobalt 100 = Neoverse N2 = has i8mm) and turns the projection map into a
+# measured one. This is the "fork and run it yourself" reproducibility that the
+# submission stands on — judges press a button, no silicon to rent.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'bench/**'
+      - 'tokonomics/**'
+      - '.github/workflows/bench.yml'
+
+# write: so a `Run workflow` on a fork commits the measured results + figures
+# back into that fork — that is the "fork and reproduce" story the submission
+# stands on. (Triggers above are bench/tokonomics only, so committing results/**
+# and figures/** cannot re-trigger this workflow — no loop.)
+permissions:
+  contents: write
+
+jobs:
+  microkernel:
+    runs-on: ubuntu-24.04-arm   # free Arm64 for public repos; Neoverse N2 + i8mm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show CPU features (prove i8mm is present)
+        run: |
+          lscpu | grep -i 'model name' || true
+          grep -o 'i8mm\|asimddp' /proc/cpuinfo | sort -u
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Build both ablation variants
+        working-directory: bench/microkernel
+        run: make both
+
+      - name: Run microkernel (i8mm OFF and ON)
+        working-directory: bench/microkernel
+        run: |
+          ./bench_off | tee ../../results/measured/bench_off.json
+          ./bench_on  | tee ../../results/measured/bench_on.json
+
+      - name: Merge into measured economics + roofline
+        run: python -m tokonomics measured
+
+      - name: Refresh projection figures (for side-by-side context)
+        run: python -m tokonomics project
+
+      - name: Regenerate REPORT.md
+        run: python -m tokonomics report
+
+      - name: Upload measured artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tokonomics-measured
+          path: |
+            results/measured/**
+            figures/**
+            REPORT.md
+
+      - name: Commit measured results back into the (forked) repo
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name  "tokonomics-ci"
+          git config user.email "tokonomics-ci@users.noreply.github.com"
+          git add results/measured figures REPORT.md
+          if git diff --cached --quiet; then
+            echo "no measured changes to commit"
+          else
+            git commit -m "ci: measured Arm N2 economics + figures [skip ci]"
+            git push
+          fi
+
+  # Macro confirmation with a real model: build llama.cpp i8mm on/off, bench
+  # pp/tg on a small GGUF, then ingest the JSONs into a *measured-LLM* economics
+  # table and commit it back — so the headline number a judge reads is measured
+  # tokens/sec on a real model, not only the microkernel proxy. Manual trigger.
+  llama:
+    if: github.event_name == 'workflow_dispatch'
+    # Serialize behind the microkernel job: both jobs commit + push results back
+    # into the fork, so running them in parallel races on a non-fast-forward push.
+    # `needs` makes this job start after microkernel's commit lands, and its
+    # checkout below picks that commit up — one linear history, no push conflict.
+    needs: microkernel
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      # `checkout` pins the dispatch-time SHA, but `microkernel` pushed its
+      # measured economics back AFTER dispatch. Fast-forward to the branch HEAD
+      # so this job's tree already contains results/measured/economics.json
+      # before we regenerate REPORT.md — otherwise the final headline report
+      # would carry the macro (llama) layer but drop the micro layer.
+      - name: Pick up microkernel's pushed measured results
+        run: git pull --ff-only origin "${GITHUB_REF_NAME}"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package + build deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake build-essential curl
+          pip install -e .
+      - name: Build llama.cpp i8mm on/off and bench pp/tg
+        run: bash bench/llama/run_llama_bench.sh
+      - name: Ingest llama-bench JSON into measured-LLM economics
+        run: python -m tokonomics llama
+      - name: Regenerate REPORT.md (headline = real LLM inference)
+        run: python -m tokonomics report
+      - name: Upload llama artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tokonomics-llama
+          path: |
+            results/measured/llama_*.json
+            results/measured/llama_economics.json
+            REPORT.md
+      - name: Commit measured-LLM economics back into the (forked) repo
+        run: |
+          git config user.name  "tokonomics-ci"
+          git config user.email "tokonomics-ci@users.noreply.github.com"
+          git add results/measured/llama_economics.json REPORT.md
+          if git diff --cached --quiet; then
+            echo "no measured-LLM changes to commit"
+          else
+            git commit -m "ci: measured-LLM (llama.cpp) economics on Arm N2 [skip ci]"
+            # This job ran after `microkernel` (needs:), which pushed its own
+            # commit; our checkout predates it, so rebase onto the pushed HEAD
+            # before pushing to avoid a non-fast-forward rejection.
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+            git push
+          fi
