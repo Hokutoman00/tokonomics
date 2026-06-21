@@ -87,6 +87,37 @@ def generate_report(root: Path) -> Path:
                    if lift is not None else ""),
                   ""]
 
+    # Measured int8 ceilings (the raw microkernel evidence) — emit GEMM (prefill /
+    # compute path) AND GEMV (decode path) side by side so the decode result is
+    # not laundered: i8mm lifts the compute path but measurably *costs* the
+    # decode path, mirroring the macro llama decode. This is the honest within-
+    # silicon picture the roofline table below abstracts away.
+    boff = _load(root / "results" / "measured" / "bench_off.json")
+    bon = _load(root / "results" / "measured" / "bench_on.json")
+    if boff and bon:
+        gemm_off = boff.get("peak_int8_gops_off")
+        gemm_on = bon.get("peak_int8_gops_on")
+        gv_off = boff.get("gemv_gops")
+        gv_on = bon.get("gemv_gops")
+        if all(v is not None for v in (gemm_off, gemm_on, gv_off, gv_on)):
+            gemm_d = (gemm_on / gemm_off - 1) * 100
+            gv_d = (gv_on / gv_off - 1) * 100
+            parts += [
+                "### Measured int8 microkernel ceilings (i8mm off → on)",
+                "| path | proxies | i8mm off | i8mm on | Δ |",
+                "|---|---|--:|--:|--:|",
+                f"| **GEMM** (compute) | prefill | {gemm_off:.2f} GOPS | "
+                f"{gemm_on:.2f} GOPS | **{gemm_d:+.0f}%** |",
+                f"| **GEMV** (memory) | decode | {gv_off:.2f} GOPS | "
+                f"{gv_on:.2f} GOPS | **{gv_d:+.0f}%** |",
+                "",
+                f"i8mm lifts the compute path (**{gemm_d:+.0f}%**, → prefill) but "
+                f"measurably *reduced* the decode-style GEMV path "
+                f"(**{gv_d:+.0f}%**) — the micro decode regression matches the "
+                f"macro llama decode result above, so \"i8mm does not help decode\" "
+                f"is, on this silicon, a measured **small loss**, not merely flat.",
+                ""]
+
     # Microkernel-derived economics. The int8 GEMM/GEMV ceilings and the STREAM
     # bandwidth are *measured* on silicon (`bench_off/on.json`: 85→101 GOPS,
     # ~34-35 GB/s), but the per-model tok/s below are a **roofline derivation** of

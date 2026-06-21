@@ -3,8 +3,10 @@
 **The Arm64 LLM-inference economics lab.** The primary result is a *measurement*:
 on real Arm silicon (free Neoverse N2 runner) it runs a within-CPU **Armv8.6 i8mm
 (SMMLA) on/off ablation** and finds i8mm lifts **prefill +29%** on real
-`llama.cpp` (Llama-3.2-1B Q4_0, pp512) while leaving **decode flat** (memory-bound)
-— confirmed by a bit-exact int8 microkernel. It then **prices that measured
+`llama.cpp` (Llama-3.2-1B Q4_0, pp512) while it **does not help decode — it
+measurably *cost* ~12%** (49.9→43.9 tok/s, memory-bound path, within the
+pre-registered ±15% band) — confirmed by a bit-exact int8 microkernel whose
+decode-style GEMV path drops the same ~13% (82.4→71.9 GOPS). It then **prices that measured
 throughput** into tokens/$ and tokens/J* (`tokens` = *LLM tokens*, not crypto).
 The economics this implies: because i8mm lifts only compute-bound prefill, the
 newest, most expensive instance is *not* always the cheapest place to run.
@@ -50,10 +52,25 @@ ablation and a real `llama.cpp` model, and **committed the measured tokens/$ tab
 (Arm N2) → Run workflow** to regenerate every number on *your* own silicon.
 
 On real `llama.cpp` (Llama-3.2-1B Q4_0): i8mm lifts **prefill +29%** (200.8 → 258.6
-tok/s, pp512) and moves **decode −12%** (49.9 → 43.9 tok/s, tg128) — inside the
-±15% memory-bound noise band the ingest firewall pre-registers, i.e. i8mm does
-**not** help decode (memory-bound), exactly as the roofline predicts and the
-microkernel ablation shows. Raw JSON in [`results/measured/`](results/measured/).
+tok/s, pp512) and **does not help decode — it measurably *cost* −12%** (49.9 → 43.9
+tok/s, tg128), inside the ±15% memory-bound band the ingest firewall pre-registers.
+The microkernel agrees on **both** signs: its compute GEMM path rose **+19%**
+(85.2 → 101.3 GOPS) while its decode-style **GEMV path fell −13%** (82.4 → 71.9
+GOPS). So the honest one-liner is *"i8mm pays off on prefill and slightly hurts
+decode on this silicon"* — a measured negative for decode, reported as such, not
+rounded to "flat." Raw JSON in [`results/measured/`](results/measured/).
+
+**One lift, three measurements (don't conflate them):**
+
+| quantity | value | provenance |
+|---|--:|---|
+| published Neoverse i8mm peak ratio | ~2x | projection (vendor TRM) |
+| measured microkernel GEMM (compute ceiling) | **1.19x** | measured (`bench_off/on.json`) |
+| measured `llama.cpp` prefill (pp512) | **1.29x** | measured (`llama_off/on.json`) |
+
+The real silicon delivers ~1.2–1.3x of the i8mm uplift, **not** the published ~2x
+— the gap (memory traffic, non-GEMM time, kernel maturity) is exactly why this
+repo measures instead of quoting the spec.
 
 ---
 
@@ -115,7 +132,8 @@ A roofline model (`tokonomics/model.py`) pins each phase to a ceiling:
 That asymmetry is *why* the cheapest instance depends on your workload, and the
 lab makes it measurable **two ways** rather than asserted:
 
-- **micro** — the `bench/microkernel` int8 GEMM ablation (i8mm lifts the GEMM);
+- **micro** — the `bench/microkernel` int8 ablation: i8mm lifts the **GEMM**
+  (compute, +19%) but the **GEMV** (memory-bound, decode-style) path *drops* −13%;
 - **macro** — a real `llama.cpp` run (`bench/llama`) on a GGUF model, ingested by
   `tokonomics llama` into a *measured* tokens/$ table where i8mm lifts **prefill
   (pp512)** while **decode (tg128) does not improve** (−12%, inside the
@@ -124,10 +142,13 @@ lab makes it measurable **two ways** rather than asserted:
   headline of `REPORT.md` once CI has run — measured throughput, not a roofline
   derivation. If the macro decode were to move with i8mm, the ingest **refuses
   the run** (it would contradict the memory-bound claim), so the mechanism is
-  falsifiable, not decorative.
+  falsifiable, not decorative. (Disclosure: the measured decode ratio **0.88**
+  cleared the **0.85** reject floor by only ~3 points — the firewall is genuinely
+  load-bearing here, not a formality; a noisier run would have been rejected.)
 
 The robust, now-measurable claim is that *mechanism* (prefill compute-bound and
-i8mm-liftable; decode memory-bound and i8mm-immune). The exact prompt:gen ratio
+i8mm-liftable; decode memory-bound, so i8mm gives it **no benefit** — and on this
+run a small measured **loss**, −12%). The exact prompt:gen ratio
 where the cheapest instance flips is the one fragile, input-sensitive detail —
 which is precisely what a measured CI run nails down.
 

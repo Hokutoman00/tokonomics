@@ -17,10 +17,15 @@ derivation.
 
 Honesty firewall (same spirit as merge_measured / schema):
   * every tok/s must be finite and > 0, and both rows must exist in both files;
-  * decode is memory-bound and therefore i8mm-immune by the roofline argument,
-    so a tg that moves more than DECODE_TOL between the two builds signals a
-    noisy/thermal run, not an i8mm effect -> reject (this is the macro check
-    that the micro story holds);
+  * decode is memory-bound, so the roofline argument predicts i8mm gives it no
+    *benefit*. The measured reality on this repo's run is slightly worse than
+    flat: decode *dropped* ~12% with i8mm on (and the microkernel GEMV path
+    dropped ~13%), i.e. i8mm cost decode rather than helping it. The firewall's
+    job is to bound *how far* tg may move before the memory-bound claim is no
+    longer credible: a |tg ratio - 1| beyond DECODE_TOL (a rise from i8mm, or a
+    drop too large to be codepath/thermal overhead) signals a run that
+    contradicts the memory-bound story -> reject. A modest measured *loss* inside
+    the band is reported honestly as a loss, never relabelled "flat".
   * we do NOT force prefill to rise. If measured pp_on < pp_off that is an
     honest negative result and is reported as such (lift < 1.0), never hidden.
 """

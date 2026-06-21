@@ -207,7 +207,9 @@ def cmd_llama(args):
         json.dumps(doc, indent=2), encoding="utf-8")
     print(f"[llama] {label} model={doc['model']}: "
           f"i8mm prefill lift {doc['i8mm_prefill_lift']:.2f}x, "
-          f"decode ratio {doc['decode_ratio']:.2f}x (memory-bound, ~flat) -> "
+          f"decode ratio {doc['decode_ratio']:.2f}x "
+          f"({(doc['decode_ratio'] - 1) * 100:+.0f}%, memory-bound: i8mm gave no "
+          f"benefit, measured a small loss) -> "
           f"results/measured/llama_economics.json")
 
 

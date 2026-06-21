@@ -17,6 +17,14 @@ Model: **llama 1B Q4_0** on **cobalt100-n2** via `llama.cpp llama-bench (real GG
 
 - **i8mm prefill lift: 1.29x** (measured pp512). **decode: -12%** (0.88x) — within the pre-registered ±15% memory-bound noise band, i.e. i8mm does **not** help decode (and the run is refused if decode moves *with* i8mm beyond that band), exactly as the roofline predicts. The macro (llama.cpp) run thus confirms the micro (microkernel) ablation: i8mm pays off on prefill, not decode.
 
+### Measured int8 microkernel ceilings (i8mm off → on)
+| path | proxies | i8mm off | i8mm on | Δ |
+|---|---|--:|--:|--:|
+| **GEMM** (compute) | prefill | 85.15 GOPS | 101.30 GOPS | **+19%** |
+| **GEMV** (memory) | decode | 82.35 GOPS | 71.88 GOPS | **-13%** |
+
+i8mm lifts the compute path (**+19%**, → prefill) but measurably *reduced* the decode-style GEMV path (**-13%**) — the micro decode regression matches the macro llama decode result above, so "i8mm does not help decode" is, on this silicon, a measured **small loss**, not merely flat.
+
 ## 📐 ROOFLINE from measured microkernel ceilings (modeled tok/s — not real inference)
 Model: **Llama-3.2-1B Q4_0** — tok/s here are the **measured int8 ceiling projected onto the model** (roofline), so decode == prefill within each i8mm setting; see the real-inference table above for measured per-phase tok/s.
 
